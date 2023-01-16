@@ -150,3 +150,7 @@ static/
 yatube/posts/static/
 yatube/media/
 
+/htmlcov
+htmlcov/
+media/
+sent_emails/
