@@ -162,7 +162,7 @@ class PostPagesTests(TestCase):
             response = self.authorized_client.get(name)
             self.assertEqual(len(
                 response.context['page_obj'].object_list), Post.objects.count()
-                )
+            )
 
     def test_post_not_another_group(self):
         """Созданный пост не попал в группу, для которой не был предназначен"""
