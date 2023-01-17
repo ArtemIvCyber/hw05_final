@@ -22,7 +22,13 @@ def get_page(queryset, request):
 def index(request):
     post_list = Post.objects.all().order_by('-pub_date')
     page_obj = get_page(post_list, request)
-    context = {'page_obj': page_obj, }
+    index = True
+    follow = True
+    context = {
+        'page_obj': page_obj,
+        'index': index,
+        'follow': follow
+    }
     template = 'posts/index.html'
     return render(request, template, context)
 
@@ -64,7 +70,6 @@ def post_detail(request, post_id):
     context = {
         'post': post,
         'posts_count': posts_count,
-        'requser': request.user,
         'comments': comments,
         'form': form,
     }
@@ -129,7 +134,7 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if author != request.user:
         Follow.objects.get_or_create(user=request.user, author=author)
-    return redirect('posts:profile', author)
+    return redirect('posts:profile', username)
 
 
 @login_required

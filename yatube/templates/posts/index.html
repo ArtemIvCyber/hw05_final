@@ -4,13 +4,13 @@
 {% block content %}
 {% include 'posts/includes/switcher.html' with index=True %}
 {% for post in page_obj %}
-<ul>
-  <li>
+<ul class="list-group">
+  <li class="list-group-item list-group-item-light">
       Автор: <a href="{% url 'posts:profile' post.author %}">
         {% if post.author.get_full_name %}{{ post.author.get_full_name }}{% else %}{{ post.author }}{% endif %}
       </a>
   </li>
-  <li>
+  <li class="list-group-item list-group-item-light">
       Дата публикации: <strong>{{ post.pub_date|date:'d E Y' }}</strong>
   </li>
 </ul>
@@ -32,7 +32,9 @@
   </div>
 </div>
 
-    {% if not forloop.last %}<hr>{% endif %}
-  {% endfor %}
-  {% include 'posts/includes/paginator.html' %}
+{% if not forloop.last %}<hr>{% endif %}
+{% endfor %}
+<div class="d-flex justify-content-center">
+    {% include 'posts/includes/paginator.html' %}
+</div>
 {% endblock %}

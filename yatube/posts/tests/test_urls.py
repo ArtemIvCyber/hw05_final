@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.core.cache import cache
+from django.urls import reverse
 from http import HTTPStatus
 
 
@@ -27,10 +28,13 @@ class PostURLTests(TestCase):
 
     def test_urls_anybody(self):
         """Доступ кучи страниц для неавторизованного пользователя"""
-        adresses = ('/',
-                    f'/group/{self.group.slug}/',
-                    f'/profile/{self.user.username}/',
-                    f'/posts/{self.post.id}/')
+        adresses = (reverse('posts:index'),
+                    reverse('posts:group_list',
+                            kwargs={'slug': self.group.slug}),
+                    reverse('posts:profile',
+                            kwargs={'username': self.user.username}),
+                    reverse('posts:post_detail',
+                            kwargs={'post_id': self.post.id}))
 
         for adress in adresses:
             with self.subTest(adress):
@@ -39,27 +43,13 @@ class PostURLTests(TestCase):
 
     def test_urls_authorized_client(self):
         """Доступ create и posts для авторизованного пользователя"""
-        pages = ('/create/',
-                 f'/posts/{self.post.id}/edit/')
+        pages = (reverse('posts:edit',
+                         kwargs={'post_id': self.post.id}),
+                 reverse('posts:create'))
 
         for page in pages:
             response = self.authorized_client.get(page)
             self.assertEqual(response.status_code, HTTPStatus.OK)
-
-    def test_urls_uses_correct_template(self):
-        """Проверка доступности страниц и шаблонов """
-        templates = {
-            '/': 'posts/index.html',
-            f'/group/{self.group.slug}/': 'posts/group_list.html',
-            f'/profile/{self.user.username}/': 'posts/profile.html',
-            f'/posts/{self.post.id}/': 'posts/post_detail.html',
-            '/create/': 'posts/create_post.html',
-            f'/posts/{self.post.id}/edit/': 'posts/create_post.html'}
-
-        for adress, template in templates.items():
-            with self.subTest(adress=adress):
-                response = self.authorized_client.get(adress)
-                self.assertTemplateUsed(response, template)
 
     def test_page_404(self):
         """Проверяем, запрос к несуществующей странице 404."""

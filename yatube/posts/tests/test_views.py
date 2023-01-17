@@ -28,7 +28,7 @@ class PostPagesTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='auth')
+        cls.user = User.objects.create_user(username='test_user')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
@@ -116,6 +116,7 @@ class PostPagesTests(TestCase):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id}))
+
         post_text_0 = {response.context['post'].text: 'Тестовый пост',
                        response.context['post'].group: self.group,
                        response.context['post'].author: self.user.username}
@@ -159,7 +160,9 @@ class PostPagesTests(TestCase):
 
         for name in reverse_page_names_post:
             response = self.authorized_client.get(name)
-            self.assertEqual(len(response.context['page_obj'].object_list), 1)
+            self.assertEqual(len(
+                response.context['page_obj'].object_list), Post.objects.count()
+            )
 
     def test_post_not_another_group(self):
         """Созданный пост не попал в группу, для которой не был предназначен"""
@@ -201,6 +204,8 @@ class FollowViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.author = User.objects.create_user(
+            username='www',)
         cls.post_autor = User.objects.create(
             username='post_autor',
         )
@@ -214,39 +219,34 @@ class FollowViewsTest(TestCase):
 
     def setUp(self):
         cache.clear()
+        self.client = Client()
+        self.user = User.objects.create_user(username='user')
+        self.client.force_login(self.user)
         self.author_client = Client()
         self.author_client.force_login(self.post_follower)
-        self.follower_client = Client()
-        self.follower_client.force_login(self.post_autor)
 
-    def test_follow_on_user(self):
-        """Проверка подписки на пользователя."""
-        count_follow = Follow.objects.count()
-        self.follower_client.post(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': self.post_follower}))
-        follow = Follow.objects.all().latest('id')
+    def test_follow(self):
+        self.response = (self.client.get(
+            reverse('posts:profile_follow', args={self.author})))
 
-        self.assertEqual(Follow.objects.count(), count_follow + 1)
-        self.assertEqual(follow.author_id, self.post_follower.id)
-        self.assertEqual(follow.user_id, self.post_autor.id)
+        self.assertIs(
+            Follow.objects.filter(user=self.user, author=self.author).exists(),
+            True
+        )
 
-    def test_unfollow_on_user(self):
-        """Проверка отписки от пользователя."""
-        Follow.objects.create(
-            user=self.post_autor,
-            author=self.post_follower)
-        count_follow = Follow.objects.count()
-        self.follower_client.post(
-            reverse(
-                'posts:profile_unfollow',
-                kwargs={'username': self.post_follower}))
+    def test_unfollow(self):
+        self.response = (self.client.get(
+            reverse('posts:profile_follow', args={self.author})))
+        self.response = (self.client.get(
+            reverse('posts:profile_unfollow', args={self.author})))
 
-        self.assertEqual(Follow.objects.count(), count_follow - 1)
+        self.assertIs(
+            Follow.objects.filter(user=self.user, author=self.author).exists(),
+            False
+        )
 
     def test_follow_on_authors(self):
-        """Проверка записей у тех кто подписан."""
+        """Проверка отписки от пользователя."""
         post = Post.objects.create(
             author=self.post_autor,
             text="Подпишись на меня")
