@@ -162,7 +162,7 @@ class PostPagesTests(TestCase):
             response = self.authorized_client.get(name)
             self.assertEqual(len(
                 response.context['page_obj'].object_list), Post.objects.count()
-            )
+                )
 
     def test_post_not_another_group(self):
         """Созданный пост не попал в группу, для которой не был предназначен"""
@@ -205,12 +205,12 @@ class FollowViewsTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.author = User.objects.create_user(
-            username='www',)
+            username='autor',)
         cls.post_autor = User.objects.create(
             username='post_autor',
         )
-        cls.post_follower = User.objects.create(
-            username='post_follower',
+        cls.user2 = User.objects.create(
+            username='user2',
         )
         cls.post = Post.objects.create(
             text='Подпишись на меня',
@@ -223,12 +223,11 @@ class FollowViewsTest(TestCase):
         self.user = User.objects.create_user(username='user')
         self.client.force_login(self.user)
         self.author_client = Client()
-        self.author_client.force_login(self.post_follower)
+        self.author_client.force_login(self.user2)
 
     def test_follow(self):
         self.response = (self.client.get(
             reverse('posts:profile_follow', args={self.author})))
-
         self.assertIs(
             Follow.objects.filter(user=self.user, author=self.author).exists(),
             True
@@ -239,7 +238,6 @@ class FollowViewsTest(TestCase):
             reverse('posts:profile_follow', args={self.author})))
         self.response = (self.client.get(
             reverse('posts:profile_unfollow', args={self.author})))
-
         self.assertIs(
             Follow.objects.filter(user=self.user, author=self.author).exists(),
             False
@@ -251,7 +249,7 @@ class FollowViewsTest(TestCase):
             author=self.post_autor,
             text="Подпишись на меня")
         Follow.objects.create(
-            user=self.post_follower,
+            user=self.user2,
             author=self.post_autor)
 
         response = self.author_client.get(
