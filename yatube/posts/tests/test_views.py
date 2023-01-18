@@ -1,3 +1,6 @@
+import tempfile
+import shutil
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
@@ -5,9 +8,6 @@ from django.core.cache import cache
 from django.conf import settings
 from django.urls import reverse
 from django import forms
-
-import tempfile
-import shutil
 
 from ..models import Follow, Group, Post
 
@@ -209,6 +209,8 @@ class FollowViewsTest(TestCase):
         cls.post_autor = User.objects.create(
             username='post_autor',
         )
+        cls.user = User.objects.create_user(
+            username='user')
         cls.user2 = User.objects.create(
             username='user2',
         )
@@ -216,32 +218,48 @@ class FollowViewsTest(TestCase):
             text='Подпишись на меня',
             author=cls.post_autor,
         )
+        cls.client = Client()
+        cls.author_client = Client()
 
     def setUp(self):
         cache.clear()
-        self.client = Client()
-        self.user = User.objects.create_user(username='user')
-        self.client.force_login(self.user)
-        self.author_client = Client()
         self.author_client.force_login(self.user2)
 
     def test_follow(self):
+        self.client.force_login(self.user)
+
         self.response = (self.client.get(
             reverse('posts:profile_follow', args={self.author})))
-        self.assertIs(
-            Follow.objects.filter(user=self.user, author=self.author).exists(),
-            True
-        )
+
+        self.assertTrue(Follow.objects.filter(user=self.user,
+                                              author=self.author).exists())
 
     def test_unfollow(self):
-        self.response = (self.client.get(
-            reverse('posts:profile_follow', args={self.author})))
+        Follow.objects.create(
+            user=self.user2,
+            author=self.post_autor)
+
         self.response = (self.client.get(
             reverse('posts:profile_unfollow', args={self.author})))
+
         self.assertIs(
             Follow.objects.filter(user=self.user, author=self.author).exists(),
             False
         )
+
+    def test_follow_on_authors(self):
+        """Проверка отписки от пользователя."""
+        post = Post.objects.create(
+            author=self.post_autor,
+            text="Подпишись на меня")
+        Follow.objects.create(
+            user=self.user2,
+            author=self.post_autor)
+
+        response = self.author_client.get(
+            reverse('posts:follow_index'))
+
+        self.assertIn(post, response.context['page_obj'].object_list)
 
     def test_follow_on_authors(self):
         """Проверка отписки от пользователя."""

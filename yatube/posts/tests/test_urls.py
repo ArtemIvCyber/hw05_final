@@ -4,7 +4,6 @@ from django.core.cache import cache
 from django.urls import reverse
 from http import HTTPStatus
 
-
 from ..models import Group, Post
 
 User = get_user_model()
